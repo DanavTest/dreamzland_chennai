@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
-import { Lock, Unlock, X, ShieldAlert, Key, Eye, EyeOff, ArrowRight, Sparkles } from "lucide-react";
+import { Lock, Unlock, X, ShieldAlert, Key, Eye, EyeOff, ArrowRight } from "lucide-react";
 
 interface AgentLockScreenProps {
   onUnlock: () => void;
@@ -12,9 +12,14 @@ export default function AgentLockScreen({ onUnlock, onCancel }: AgentLockScreenP
   const [showPassword, setShowPassword] = useState<boolean>(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  // Retrieve stored passcode, defaulting to "DanJva"
+  // Retrieve stored passcode, defaulting to "jd10"
   const getStoredPasscode = () => {
-    return localStorage.getItem("rks_agent_passcode") || "DanJva";
+    const stored = localStorage.getItem("rks_agent_passcode");
+    if (!stored || stored === "DanJva") {
+      localStorage.setItem("rks_agent_passcode", "jd10");
+      return "jd10";
+    }
+    return stored;
   };
 
   useEffect(() => {
@@ -32,15 +37,6 @@ export default function AgentLockScreen({ onUnlock, onCancel }: AgentLockScreenP
       setError(true);
       if (navigator.vibrate) navigator.vibrate(200);
     }
-  };
-
-  const handleFillDefault = () => {
-    const defaultCode = getStoredPasscode();
-    setPasscode(defaultCode);
-    setError(false);
-    setTimeout(() => {
-      onUnlock();
-    }, 150);
   };
 
   return (
@@ -131,18 +127,6 @@ export default function AgentLockScreen({ onUnlock, onCancel }: AgentLockScreenP
             <ArrowRight className="h-4 w-4" />
           </button>
         </form>
-
-        {/* Quick Fill Default Button */}
-        <div className="mt-4 w-full">
-          <button
-            type="button"
-            onClick={handleFillDefault}
-            className="w-full py-2.5 px-4 bg-indigo-950/40 hover:bg-indigo-900/40 border border-indigo-800/40 hover:border-indigo-700/60 text-indigo-300 rounded-xl text-xs font-sans font-semibold transition-all flex items-center justify-center space-x-2"
-          >
-            <Sparkles className="h-3.5 w-3.5 text-amber-400" />
-            <span>Auto-fill passcode</span>
-          </button>
-        </div>
 
         {/* Return to Public Site */}
         <button

@@ -45,7 +45,14 @@ export default function AgentPortal({
   // Profile Form State
   const [profileForm, setProfileForm] = useState<RealtorProfile>({ ...profile });
   const [profileSaved, setProfileSaved] = useState(false);
-  const [passcodeForm, setPasscodeForm] = useState<string>(() => localStorage.getItem("rks_agent_passcode") || "DanJva");
+  const [passcodeForm, setPasscodeForm] = useState<string>(() => {
+    const stored = localStorage.getItem("rks_agent_passcode");
+    if (!stored || stored === "DanJva") {
+      localStorage.setItem("rks_agent_passcode", "jd10");
+      return "jd10";
+    }
+    return stored;
+  });
 
   // Keep profileForm synced with parent state changes
   React.useEffect(() => {
