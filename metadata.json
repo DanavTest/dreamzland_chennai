@@ -1,0 +1,6 @@
+{
+  "name": "chennaidreamzland",
+  "description": "Premium personal real estate property portal and listing manager for Chennai, showcasing properties in elite Chennai sectors.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
