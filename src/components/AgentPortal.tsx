@@ -63,19 +63,60 @@ export default function AgentPortal({
   const [dragActiveProfile, setDragActiveProfile] = useState(false);
   const [dragActiveListing, setDragActiveListing] = useState(false);
 
-  // Helper to convert images to Base64
-  const handleProfileImageFile = (file: File) => {
+  // Helper to compress and convert images to Base64 JPEG to avoid localStorage quota limits
+  const compressImageFile = (file: File, maxWidth = 800, maxHeight = 800, quality = 0.8): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        const img = new Image();
+        img.onload = () => {
+          let width = img.width;
+          let height = img.height;
+
+          if (width > maxWidth || height > maxHeight) {
+            if (width > height) {
+              height = Math.round((height * maxWidth) / width);
+              width = maxWidth;
+            } else {
+              width = Math.round((width * maxHeight) / height);
+              height = maxHeight;
+            }
+          }
+
+          const canvas = document.createElement("canvas");
+          canvas.width = width;
+          canvas.height = height;
+
+          const ctx = canvas.getContext("2d");
+          if (!ctx) {
+            resolve(event.target?.result as string);
+            return;
+          }
+
+          ctx.drawImage(img, 0, 0, width, height);
+          const dataUrl = canvas.toDataURL("image/jpeg", quality);
+          resolve(dataUrl);
+        };
+        img.onerror = () => reject(new Error("Image loading failed"));
+        img.src = event.target?.result as string;
+      };
+      reader.onerror = (err) => reject(err);
+      reader.readAsDataURL(file);
+    });
+  };
+
+  // Helper to convert profile image to compressed Base64
+  const handleProfileImageFile = async (file: File) => {
     if (!file.type.startsWith("image/")) {
       alert("Please upload or paste an image file.");
       return;
     }
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      if (typeof reader.result === "string") {
-        setProfileForm((prev) => ({ ...prev, photoUrl: reader.result as string }));
-      }
-    };
-    reader.readAsDataURL(file);
+    try {
+      const compressedDataUrl = await compressImageFile(file, 600, 600, 0.82);
+      setProfileForm((prev) => ({ ...prev, photoUrl: compressedDataUrl }));
+    } catch (err) {
+      console.error("Failed to compress profile image", err);
+    }
   };
 
   const handleProfileDrag = (e: React.DragEvent) => {
@@ -111,47 +152,32 @@ export default function AgentPortal({
     }
   };
 
-  // Helper to convert listing image files (one or more) to Base64
-  const handleListingImageFiles = (files: FileList | File[]) => {
+  // Helper to convert listing image files (one or more) to compressed Base64
+  const handleListingImageFiles = async (files: FileList | File[]) => {
     const validImageFiles = Array.from(files).filter(f => f.type.startsWith("image/"));
     if (validImageFiles.length === 0) {
       alert("Please upload or paste image files.");
       return;
     }
 
-    const promises = validImageFiles.map(file => {
-      return new Promise<string>((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onloadend = () => {
-          if (typeof reader.result === "string") {
-            resolve(reader.result);
-          } else {
-            reject(new Error("Failed to read file"));
-          }
-        };
-        reader.onerror = reject;
-        reader.readAsDataURL(file);
-      });
-    });
+    try {
+      const promises = validImageFiles.map(file => compressImageFile(file, 1000, 1000, 0.8));
+      const base64Images = await Promise.all(promises);
 
-    Promise.all(promises)
-      .then(base64Images => {
-        setListingForm((prev) => {
-          const currentGallery = prev.gallery || [];
-          const newGallery = [...currentGallery, ...base64Images];
-          // If the primary image is empty or uses the default placeholder, set it to the first uploaded image
-          const defaultPlaceholder = "https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?auto=format&fit=crop&w=800&q=80";
-          const needsPrimaryImage = !prev.image || prev.image === defaultPlaceholder;
-          return {
-            ...prev,
-            image: needsPrimaryImage ? base64Images[0] : prev.image,
-            gallery: newGallery
-          };
-        });
-      })
-      .catch(err => {
-        console.error("Error reading image files:", err);
+      setListingForm((prev) => {
+        const currentGallery = prev.gallery || [];
+        const newGallery = [...currentGallery, ...base64Images];
+        const defaultPlaceholder = "https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?auto=format&fit=crop&w=800&q=80";
+        const needsPrimaryImage = !prev.image || prev.image === defaultPlaceholder;
+        return {
+          ...prev,
+          image: needsPrimaryImage ? base64Images[0] : prev.image,
+          gallery: newGallery
+        };
       });
+    } catch (err) {
+      console.error("Error reading image files:", err);
+    }
   };
 
   const handleListingDrag = (e: React.DragEvent) => {
