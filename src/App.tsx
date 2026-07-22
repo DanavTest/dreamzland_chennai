@@ -57,13 +57,7 @@ export default function App() {
 
       if (storedProfile) {
         const parsed = JSON.parse(storedProfile);
-        // Force-migrate older profiles so the user sees their new name and bio immediately
-        if (parsed.name === "Danav" || parsed.companyName === "chennaidreamzland" || !parsed.bio.includes("I run an independent")) {
-          setProfile(INITIAL_REALTOR_PROFILE);
-          localStorage.setItem("rks_realtor_profile", JSON.stringify(INITIAL_REALTOR_PROFILE));
-        } else {
-          setProfile(parsed);
-        }
+        setProfile({ ...INITIAL_REALTOR_PROFILE, ...parsed });
       }
       if (storedListings) setListings(JSON.parse(storedListings));
       if (storedDeals) setDeals(JSON.parse(storedDeals));

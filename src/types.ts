@@ -36,6 +36,7 @@ export interface Listing {
   gallery?: string[]; // array of images for slideshow
   description: string;
   amenities: string[];
+  usps?: string[];
   status: "Active" | "Under Offer" | "Sold";
 }
 

@@ -3,7 +3,7 @@ import { Listing, LeadSubmission } from "../types";
 import { formatIndianPrice, CHENNAI_LOCALITIES } from "../data";
 import { 
   MapPin, Home, BedDouble, Key, Mail, Phone, Maximize, Compass, 
-  MessageSquareCode, Sparkles, ChevronLeft, ChevronRight, X, Images 
+  MessageSquareCode, Sparkles, ChevronLeft, ChevronRight, X, Images, RefreshCw 
 } from "lucide-react";
 
 interface PublicListingsProps {
@@ -44,6 +44,43 @@ export default function PublicListings({
     if (!item) return [];
     if (item.gallery && item.gallery.length > 0) return item.gallery;
     return [item.image];
+  };
+
+  // AI Card & Modal Description Generator State
+  const [cardAiLoading, setCardAiLoading] = useState<Record<string, boolean>>({});
+  const [cardAiDescriptions, setCardAiDescriptions] = useState<Record<string, string>>({});
+
+  const handleGenerateCardAi = async (item: Listing, e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
+    setCardAiLoading(prev => ({ ...prev, [item.id]: true }));
+    try {
+      const activeUsps = item.usps && item.usps.length > 0 
+        ? item.usps 
+        : ["Near Metro", "Sea View", "Gated Community"];
+
+      const response = await fetch("/api/generate-description", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          propertyType: item.propertyType,
+          location: item.location,
+          bhk: item.bhk,
+          price: formatIndianPrice(item.price),
+          amenities: item.amenities,
+          usps: activeUsps,
+          tone: "engaging, highlight USP points clearly",
+        }),
+      });
+
+      const data = await response.json();
+      if (data.description) {
+        setCardAiDescriptions(prev => ({ ...prev, [item.id]: data.description }));
+      }
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setCardAiLoading(prev => ({ ...prev, [item.id]: false }));
+    }
   };
 
   // Reset active detail image index whenever detail modal is opened
@@ -405,19 +442,52 @@ export default function PublicListings({
                 {/* Card Info */}
                 <div className="p-6 text-left flex-1 flex flex-col justify-between">
                   <div>
-                    <div className="flex items-center space-x-1.5 text-slate-500">
-                      <MapPin className="h-3.5 w-3.5 text-indigo-500 flex-shrink-0" />
-                      <span className="text-xs font-mono font-bold tracking-tight text-slate-600">
-                        {item.location}
-                      </span>
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center space-x-1.5 text-slate-500">
+                        <MapPin className="h-3.5 w-3.5 text-indigo-500 flex-shrink-0" />
+                        <span className="text-xs font-mono font-bold tracking-tight text-slate-600">
+                          {item.location}
+                        </span>
+                      </div>
+                      
+                      <button
+                        type="button"
+                        onClick={(e) => handleGenerateCardAi(item, e)}
+                        disabled={cardAiLoading[item.id]}
+                        className="text-[10px] font-sans font-extrabold bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200/80 px-2 py-0.5 rounded-md flex items-center space-x-1 transition-colors"
+                        title="Generate/Refresh AI Description highlighting USPs"
+                      >
+                        {cardAiLoading[item.id] ? (
+                          <RefreshCw className="h-3 w-3 animate-spin text-indigo-600" />
+                        ) : (
+                          <Sparkles className="h-3 w-3 text-indigo-600" />
+                        )}
+                        <span>AI Pitch</span>
+                      </button>
                     </div>
                     
                     <h3 className="font-sans font-bold text-lg text-slate-900 mt-2 group-hover:text-indigo-600 transition-colors line-clamp-1 leading-tight">
                       {item.title}
                     </h3>
+
+                    {/* Highlighted USP badges like 'Near Metro', 'Sea View', 'Gated Community' */}
+                    <div className="flex flex-wrap gap-1 mt-2 mb-1">
+                      {(item.usps && item.usps.length > 0 
+                        ? item.usps 
+                        : ["Near Metro", "Sea View", "Gated Community"]
+                      ).map((usp, i) => (
+                        <span
+                          key={i}
+                          className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-sans font-bold bg-indigo-50 text-indigo-700 border border-indigo-100/80"
+                        >
+                          <Sparkles className="h-2.5 w-2.5 text-amber-500 mr-1" />
+                          <span>{usp}</span>
+                        </span>
+                      ))}
+                    </div>
                     
-                    <p className="mt-3 text-slate-500 text-xs line-clamp-3 leading-relaxed font-sans">
-                      {item.description}
+                    <p className={`mt-2 text-slate-600 text-xs line-clamp-3 leading-relaxed font-sans ${cardAiDescriptions[item.id] ? "bg-indigo-50/60 border-l-2 border-indigo-500 pl-2 py-1 rounded-r-md text-slate-800 font-medium" : ""}`}>
+                      {cardAiDescriptions[item.id] || item.description}
                     </p>
                   </div>
 
@@ -571,10 +641,50 @@ export default function PublicListings({
                     </div>
                   </div>
 
+                  {/* Key USP Highlights */}
                   <div>
-                    <h4 className="font-sans font-bold text-sm text-slate-800 border-b border-slate-100 pb-1.5 mb-2">Description</h4>
-                    <p className="text-slate-600 text-xs sm:text-sm leading-relaxed font-sans">
-                      {selectedListing.description}
+                    <h4 className="font-sans font-bold text-[10px] uppercase text-slate-400 font-mono tracking-wider mb-2">Key Unique Selling Points (USPs)</h4>
+                    <div className="flex flex-wrap gap-1.5 mb-4">
+                      {(selectedListing.usps && selectedListing.usps.length > 0 
+                        ? selectedListing.usps 
+                        : ["Near Metro", "Sea View", "Gated Community"]
+                      ).map((usp, idx) => (
+                        <span
+                          key={idx}
+                          className="bg-indigo-50 border border-indigo-200/80 text-indigo-700 text-xs px-3 py-1 rounded-lg flex items-center space-x-1 font-bold shadow-2xs"
+                        >
+                          <Sparkles className="h-3 w-3 text-amber-500" />
+                          <span>{usp}</span>
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div>
+                    <div className="flex justify-between items-center border-b border-slate-100 pb-1.5 mb-2">
+                      <h4 className="font-sans font-bold text-sm text-slate-800">Property Description</h4>
+                      <button
+                        type="button"
+                        onClick={() => handleGenerateCardAi(selectedListing)}
+                        disabled={cardAiLoading[selectedListing.id]}
+                        className="text-[10px] font-sans font-extrabold text-indigo-600 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200/80 px-2.5 py-1 rounded-lg flex items-center space-x-1 transition-all"
+                      >
+                        {cardAiLoading[selectedListing.id] ? (
+                          <>
+                            <RefreshCw className="h-3 w-3 animate-spin text-indigo-600 mr-1" />
+                            <span>Generating...</span>
+                          </>
+                        ) : (
+                          <>
+                            <Sparkles className="h-3 w-3 text-indigo-600 mr-1" />
+                            <span>Draft Fresh AI Description</span>
+                          </>
+                        )}
+                      </button>
+                    </div>
+
+                    <p className={`text-xs sm:text-sm leading-relaxed font-sans ${cardAiDescriptions[selectedListing.id] ? "bg-indigo-50/70 p-3.5 rounded-xl border border-indigo-200 text-slate-900 font-medium" : "text-slate-600"}`}>
+                      {cardAiDescriptions[selectedListing.id] || selectedListing.description}
                     </p>
                   </div>
 

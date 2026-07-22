@@ -29,10 +29,10 @@ async function startServer() {
     });
   };
 
-  // API Endpoint: Generate professional property descriptions using Gemini 3.5 Flash
+  // API Endpoint: Generate professional property descriptions using Gemini 3.5 Flash with USP highlights
   app.post("/api/generate-description", async (req, res) => {
     try {
-      const { propertyType, location, bhk, price, amenities, tone } = req.body;
+      const { propertyType, location, bhk, price, amenities, usps, tone } = req.body;
 
       if (!propertyType || !location) {
         return res.status(400).json({ error: "Property type and location are required." });
@@ -44,27 +44,37 @@ async function startServer() {
         ? amenities.join(", ") 
         : "Excellent ventilation, premium security, modern design, 24/7 water and power backup";
 
+      const uspsList = Array.isArray(usps) && usps.length > 0 
+        ? usps.join(", ") 
+        : "near metro, sea view, gated community";
+
       const prompt = `Write a highly compelling, professional real estate marketing description for a property in Chennai, India.
-Use the following details:
+
+Key Specifications:
 - Property Type: ${propertyType}
 - Location: ${location}, Chennai
 - Configuration: ${bhk ? `${bhk} BHK` : "Spacious layout"}
 - Price Range/Value: ${price || "Contact Agent for Price"}
+- Key USPs (Unique Selling Points to explicitly highlight): ${uspsList}
 - Amenities/Features: ${amenitiesStr}
 - Desired Tone: ${toneStr}
 
-Format:
-1. An eye-catching, punchy headline (e.g. "Luxurious Coastal Living: Elegant 3 BHK Apartment in Adyar")
-2. Two highly engaging paragraphs emphasizing why this property is the perfect choice, the excellent connectivity of ${location} (e.g., IT corridor convenience of OMR, coastal elegance of ECR, retail/educational excellence of Anna Nagar, upscale vibe of Adyar, or central convenience of T. Nagar), and the exceptional quality of life.
+Guidelines:
+1. Create a punchy, eye-catching headline.
+2. Write a captivating, high-converting property description (approx 100-150 words) that strongly highlights and weaves in the USP points (e.g. 'near metro', 'sea view', or 'gated community').
+3. Explain why living here in ${location} provides an unbeatable lifestyle and smart investment.
 
-Make sure the output text is clean, free of brackets or markdown hashtags/stars, and looks highly professional.`;
+Ensure the output is clean plain text, without raw markdown hashtags (#) or brackets.`;
 
       const response = await ai.models.generateContent({
-        model: "gemini-3.5-flash",
+        model: "gemini-flash-latest",
         contents: prompt,
       });
 
-      res.json({ description: response.text });
+      res.json({ 
+        description: response.text,
+        usps: Array.isArray(usps) && usps.length > 0 ? usps : ["Near Metro", "Sea View", "Gated Community"]
+      });
     } catch (error: any) {
       console.error("Gemini API Error:", error.message);
       res.status(500).json({ 

@@ -45,7 +45,12 @@ export default function AgentPortal({
   // Profile Form State
   const [profileForm, setProfileForm] = useState<RealtorProfile>({ ...profile });
   const [profileSaved, setProfileSaved] = useState(false);
-  const [passcodeForm, setPasscodeForm] = useState<string>(() => localStorage.getItem("rks_agent_passcode") || "1509");
+  const [passcodeForm, setPasscodeForm] = useState<string>(() => localStorage.getItem("rks_agent_passcode") || "DanJva");
+
+  // Keep profileForm synced with parent state changes
+  React.useEffect(() => {
+    setProfileForm({ ...profile });
+  }, [profile]);
 
   // Drag and drop states for images
   const [dragActiveProfile, setDragActiveProfile] = useState(false);
@@ -180,6 +185,18 @@ export default function AgentPortal({
   };
 
   // Listing Form / Add/Edit Modal State
+  const PRESET_USPS = [
+    "Near Metro",
+    "Sea View",
+    "Gated Community",
+    "Beachfront",
+    "Corner Plot",
+    "Vastu Compliant",
+    "IT Corridor",
+    "Park Facing",
+    "Private Terrace",
+  ];
+
   const [showListingModal, setShowListingModal] = useState(false);
   const [editingListing, setEditingListing] = useState<Listing | null>(null);
   const [listingForm, setListingForm] = useState<Partial<Listing>>({
@@ -195,6 +212,7 @@ export default function AgentPortal({
     gallery: [],
     description: "",
     amenities: ["24/7 Gated Security", "100% Power Backup", "Vastu Compliant"],
+    usps: ["Near Metro", "Sea View", "Gated Community"],
     status: "Active",
   });
   
@@ -221,12 +239,12 @@ export default function AgentPortal({
   // Handle Profile Update Save
   const handleProfileSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (passcodeForm.length !== 4) {
-      alert("Access passcode must be exactly 4 digits.");
+    if (!passcodeForm.trim()) {
+      alert("Access passcode cannot be empty.");
       return;
     }
     onUpdateProfile(profileForm);
-    localStorage.setItem("rks_agent_passcode", passcodeForm);
+    localStorage.setItem("rks_agent_passcode", passcodeForm.trim());
     setProfileSaved(true);
     setTimeout(() => setProfileSaved(false), 3000);
   };
@@ -237,6 +255,10 @@ export default function AgentPortal({
     setAiError("");
 
     try {
+      const activeUsps = listingForm.usps && listingForm.usps.length > 0 
+        ? listingForm.usps 
+        : ["Near Metro", "Sea View", "Gated Community"];
+
       const response = await fetch("/api/generate-description", {
         method: "POST",
         headers: {
@@ -248,6 +270,7 @@ export default function AgentPortal({
           bhk: listingForm.bhk,
           price: formatIndianPrice(listingForm.price || 0),
           amenities: aiAmenitiesString.split(",").map((s) => s.trim()).filter(Boolean),
+          usps: activeUsps,
           tone: "luxurious, sophisticated, and high-converting",
         }),
       });
@@ -257,6 +280,7 @@ export default function AgentPortal({
         setListingForm((prev) => ({
           ...prev,
           description: data.description,
+          usps: activeUsps,
         }));
       } else {
         throw new Error(data.error || "Failed to generate property details.");
@@ -275,6 +299,10 @@ export default function AgentPortal({
     if (!listingForm.title || !listingForm.price || !listingForm.location) return;
 
     const mainImg = listingForm.image || "https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?auto=format&fit=crop&w=800&q=80";
+    const currentUsps = listingForm.usps && listingForm.usps.length > 0 
+      ? listingForm.usps 
+      : ["Near Metro", "Sea View", "Gated Community"];
+
     const finalListing: Listing = {
       id: editingListing?.id || `lst-${Date.now()}`,
       title: listingForm.title,
@@ -287,8 +315,9 @@ export default function AgentPortal({
       location: listingForm.location,
       image: mainImg,
       gallery: listingForm.gallery && listingForm.gallery.length > 0 ? listingForm.gallery : [mainImg],
-      description: listingForm.description || "Premium property located in prime Chennai sector.",
+      description: listingForm.description || `High-spec ${listingForm.propertyType} in prime ${listingForm.location}, featuring top unique advantages like ${currentUsps.join(', ')}.`,
       amenities: listingForm.amenities || [],
+      usps: currentUsps,
       status: (listingForm.status as Listing["status"]) || "Active",
     };
 
@@ -300,21 +329,6 @@ export default function AgentPortal({
 
     setShowListingModal(false);
     setEditingListing(null);
-    setListingForm({
-      title: "",
-      price: 15000000,
-      type: "buy",
-      propertyType: "Apartment",
-      bhk: 3,
-      bathrooms: 3,
-      sqft: 1800,
-      location: "Adyar",
-      image: "https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?auto=format&fit=crop&w=800&q=80",
-      gallery: [],
-      description: "",
-      amenities: ["24/7 Gated Security", "100% Power Backup", "Vastu Compliant"],
-      status: "Active",
-    });
   };
 
   // Handle Closed Deal Submit
@@ -928,17 +942,13 @@ export default function AgentPortal({
                   </div>
 
                   <div className="space-y-1.5">
-                    <label className="font-mono text-[10px] uppercase text-slate-400 tracking-wider font-semibold">Portal Access Passcode (4-Digit PIN)</label>
+                    <label className="font-mono text-[10px] uppercase text-slate-400 tracking-wider font-semibold">Portal Access Passcode / Security Password</label>
                     <input
                       type="text"
-                      maxLength={4}
                       value={passcodeForm}
-                      onChange={(e) => {
-                        const val = e.target.value.replace(/[^0-9]/g, "");
-                        setPasscodeForm(val);
-                      }}
-                      className="w-full bg-white border border-slate-200 rounded-xl px-4 py-3 text-xs sm:text-sm text-slate-800 font-mono font-bold tracking-widest focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500/10"
-                      placeholder="0241"
+                      onChange={(e) => setPasscodeForm(e.target.value)}
+                      className="w-full bg-white border border-slate-200 rounded-xl px-4 py-3 text-xs sm:text-sm text-slate-800 font-mono font-bold tracking-wider focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500/10"
+                      placeholder="Enter security password..."
                     />
                   </div>
 
@@ -1392,30 +1402,66 @@ export default function AgentPortal({
                 )}
               </div>
 
-              {/* DYNAMIC GEMINI AI DESCRIPTION GENERATOR */}
+              {/* DYNAMIC GEMINI AI DESCRIPTION GENERATOR WITH USP SELECTION */}
               <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-4">
-                <div className="flex justify-between items-center flex-wrap gap-2">
+                <div>
+                  <label className="font-mono text-[10px] uppercase text-slate-400 tracking-wider block font-bold mb-2">
+                    Key USP Highlights (Select points like 'Near Metro', 'Sea View', 'Gated Community')
+                  </label>
+                  <div className="flex flex-wrap gap-1.5 mb-2">
+                    {PRESET_USPS.map((usp) => {
+                      const activeUsps = listingForm.usps || ["Near Metro", "Sea View", "Gated Community"];
+                      const isSelected = activeUsps.includes(usp);
+                      return (
+                        <button
+                          key={usp}
+                          type="button"
+                          onClick={() => {
+                            const newUsps = isSelected
+                              ? activeUsps.filter((u) => u !== usp)
+                              : [...activeUsps, usp];
+                            setListingForm({ ...listingForm, usps: newUsps });
+                          }}
+                          className={`px-2.5 py-1 rounded-lg text-xs font-sans font-bold border transition-all flex items-center space-x-1 ${
+                            isSelected
+                              ? "bg-indigo-600 text-white border-indigo-600 shadow-xs"
+                              : "bg-white text-slate-700 border-slate-200 hover:border-slate-300"
+                          }`}
+                        >
+                          <Sparkles className={`h-3 w-3 ${isSelected ? "text-amber-300" : "text-slate-400"}`} />
+                          <span>{usp}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                <div className="flex justify-between items-center flex-wrap gap-2 pt-3 border-t border-slate-200/80">
                   <div className="flex items-center space-x-1.5">
                     <Sparkles className="h-4.5 w-4.5 text-indigo-600 animate-pulse" />
-                    <span className="font-sans font-bold text-xs text-indigo-600">✨ Gemini Description Assistant</span>
+                    <span className="font-sans font-bold text-xs text-indigo-600">✨ Gemini AI Property Description</span>
                   </div>
                   <button
                     type="button"
                     id="btn-ai-generate"
                     disabled={aiLoading}
                     onClick={generateAiDescription}
-                    className="bg-indigo-50 hover:bg-indigo-100 disabled:bg-slate-100 disabled:text-slate-400 text-indigo-700 font-sans font-extrabold px-3.5 py-1.5 rounded-lg text-[10px] uppercase tracking-wider transition-all flex items-center space-x-1"
+                    className="bg-indigo-600 hover:bg-indigo-500 disabled:bg-slate-100 disabled:text-slate-400 text-white font-sans font-extrabold px-4 py-2 rounded-lg text-xs uppercase tracking-wider transition-all flex items-center space-x-1 shadow-sm"
                   >
                     {aiLoading ? (
                       <>
-                        <RefreshCw className="h-3 w-3 animate-spin mr-1 text-indigo-600" />
-                        <span>Drafting description...</span>
+                        <RefreshCw className="h-3.5 w-3.5 animate-spin mr-1.5 text-white" />
+                        <span>Crafting AI Description...</span>
                       </>
                     ) : (
-                      <span>Draft with Gemini AI</span>
+                      <>
+                        <Sparkles className="h-3.5 w-3.5 text-amber-300 mr-1" />
+                        <span>Generate Brief AI Description</span>
+                      </>
                     )}
                   </button>
                 </div>
+
                 <div className="space-y-1.5 text-left">
                   <label className="font-mono text-[9px] uppercase text-slate-400 tracking-wider">Amenities to highlight in AI Draft (comma separated)</label>
                   <input
@@ -1426,6 +1472,7 @@ export default function AgentPortal({
                     className="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-xs text-slate-800"
                   />
                 </div>
+
                 {aiError && (
                   <div className="text-red-600 text-[10px] flex items-center space-x-1 leading-normal">
                     <AlertCircle className="h-3 w-3 flex-shrink-0" />
