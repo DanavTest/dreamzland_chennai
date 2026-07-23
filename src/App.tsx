@@ -57,6 +57,10 @@ export default function App() {
 
       if (storedProfile) {
         const parsed = JSON.parse(storedProfile);
+        if (!parsed.photoUrl || parsed.photoUrl.includes("unsplash.com")) {
+          parsed.photoUrl = INITIAL_REALTOR_PROFILE.photoUrl;
+          localStorage.setItem("rks_realtor_profile", JSON.stringify(parsed));
+        }
         setProfile({ ...INITIAL_REALTOR_PROFILE, ...parsed });
       }
       if (storedListings) setListings(JSON.parse(storedListings));

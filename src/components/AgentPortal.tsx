@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { RealtorProfile, Listing, ClosedDeal, LeadSubmission } from "../types";
 import { formatIndianPrice, CHENNAI_LOCALITIES } from "../data";
+import { DEFAULT_DANAV_PHOTO } from "../assets/danav_profile";
 import { 
   User, Building2, ListOrdered, ClipboardList, Save, Sparkles, 
   Plus, Trash, Edit, Check, X, Phone, Mail, Award, MapPin, 
@@ -1019,6 +1020,9 @@ export default function AgentPortal({
                               src={profileForm.photoUrl}
                               alt="Profile preview"
                               referrerPolicy="no-referrer"
+                              onError={(e) => {
+                                (e.target as HTMLImageElement).src = DEFAULT_DANAV_PHOTO;
+                              }}
                               className="w-full h-full object-cover"
                             />
                           ) : (
