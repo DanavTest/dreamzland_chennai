@@ -75,6 +75,13 @@ export default function App() {
   const updateProfile = (newProfile: RealtorProfile) => {
     setProfile(newProfile);
     localStorage.setItem("rks_realtor_profile", JSON.stringify(newProfile));
+    if (newProfile.photoUrl) {
+      fetch("/api/profile-photo", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ photoUrl: newProfile.photoUrl }),
+      }).catch((err) => console.error("Failed to sync photo to server API", err));
+    }
   };
 
   const addListing = (newListing: Listing) => {

@@ -1,6 +1,5 @@
 import React from "react";
 import { RealtorProfile } from "../types";
-import { DEFAULT_DANAV_PHOTO } from "../assets/danav_profile";
 import { Award, ShieldCheck, Users, ArrowDown, MapPin, MessageSquareText } from "lucide-react";
 
 interface HeroProps {
@@ -121,13 +120,13 @@ export default function Hero({ profile, onQuickSearch }: HeroProps) {
               {/* Photo Frame Container */}
               <div className="absolute inset-2 bg-slate-100 rounded-2xl overflow-hidden border border-slate-200/50 group">
                 <img
-                  src={profile.photoUrl || DEFAULT_DANAV_PHOTO}
+                  src={profile.photoUrl || "/api/profile-photo"}
                   alt={profile.name}
                   referrerPolicy="no-referrer"
                   onError={(e) => {
-                    (e.target as HTMLImageElement).src = DEFAULT_DANAV_PHOTO;
+                    (e.target as HTMLImageElement).src = "https://images.unsplash.com/photo-1618077360395-f3068be8e001?auto=format&fit=crop&w=800&q=80";
                   }}
-                  className="w-full h-full object-cover grayscale-[15%] group-hover:scale-105 group-hover:grayscale-0 transition-all duration-500"
+                  className="w-full h-full object-cover grayscale-[10%] group-hover:scale-105 group-hover:grayscale-0 transition-all duration-500"
                 />
                 
                 {/* Info Overlay at the bottom */}

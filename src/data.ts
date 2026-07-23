@@ -1,5 +1,4 @@
 import { RealtorProfile, Listing, ClosedDeal, LeadSubmission } from "./types";
-import { DEFAULT_DANAV_PHOTO } from "./assets/danav_profile";
 
 // Helper to format currency in Indian format (Lakhs and Crores)
 export function formatIndianPrice(amount: number): string {
@@ -39,7 +38,7 @@ export const INITIAL_REALTOR_PROFILE: RealtorProfile = {
   title: "Premium Property Consultant & Owner",
   companyName: "dreamzland_chennai",
   bio: `Danav J\nI run an independent real estate practice focused on premium micro-markets in South Chennai. My work is grounded in local knowledge — the streets, the builders, the resale values, and what actually moves in Alwarpet, Teynampet, and Kodambakkam, Tambaram ,all over chennai etc.,\n\nWhether you're a Chennai-based family upgrading homes, or an NRI investor buying from abroad, I handle the process directly — property shortlisting, negotiation, paperwork, and registration support — so you're not left guessing at any stage.`,
-  photoUrl: DEFAULT_DANAV_PHOTO,
+  photoUrl: "/api/profile-photo",
   phone: "+91 98401 23456",
   email: "mayborndj@gmail.com",
   licenseNo: "TN/01/Agent/0241/2026",

@@ -1,7 +1,6 @@
 import React, { useState } from "react";
 import { RealtorProfile, Listing, ClosedDeal, LeadSubmission } from "../types";
 import { formatIndianPrice, CHENNAI_LOCALITIES } from "../data";
-import { DEFAULT_DANAV_PHOTO } from "../assets/danav_profile";
 import { 
   User, Building2, ListOrdered, ClipboardList, Save, Sparkles, 
   Plus, Trash, Edit, Check, X, Phone, Mail, Award, MapPin, 
@@ -106,15 +105,24 @@ export default function AgentPortal({
     });
   };
 
-  // Helper to convert profile image to compressed Base64
+  // Helper to convert profile image to compressed Base64 and save to server
   const handleProfileImageFile = async (file: File) => {
     if (!file.type.startsWith("image/")) {
       alert("Please upload or paste an image file.");
       return;
     }
     try {
-      const compressedDataUrl = await compressImageFile(file, 600, 600, 0.82);
+      const compressedDataUrl = await compressImageFile(file, 800, 1000, 0.88);
       setProfileForm((prev) => ({ ...prev, photoUrl: compressedDataUrl }));
+      
+      // Persist permanently to server backend disk
+      fetch("/api/profile-photo", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ photoUrl: compressedDataUrl }),
+      }).then((res) => res.json()).then((data) => {
+        console.log("Photo synced to server:", data);
+      }).catch((err) => console.error("Failed to sync photo to server:", err));
     } catch (err) {
       console.error("Failed to compress profile image", err);
     }
@@ -1021,7 +1029,7 @@ export default function AgentPortal({
                               alt="Profile preview"
                               referrerPolicy="no-referrer"
                               onError={(e) => {
-                                (e.target as HTMLImageElement).src = DEFAULT_DANAV_PHOTO;
+                                (e.target as HTMLImageElement).src = "https://images.unsplash.com/photo-1618077360395-f3068be8e001?auto=format&fit=crop&w=800&q=80";
                               }}
                               className="w-full h-full object-cover"
                             />
