@@ -57,8 +57,8 @@ export default function App() {
 
       if (storedProfile) {
         const parsed = JSON.parse(storedProfile);
-        // Replace outdated girl image URL if present in stored localStorage
-        if (!parsed.photoUrl || parsed.photoUrl.includes("photo-1534528741775")) {
+        // Replace outdated image URLs if present in stored localStorage
+        if (!parsed.photoUrl || parsed.photoUrl.includes("photo-1534528741775") || parsed.photoUrl.includes("photo-1622253692010")) {
           parsed.photoUrl = INITIAL_REALTOR_PROFILE.photoUrl;
           localStorage.setItem("rks_realtor_profile", JSON.stringify(parsed));
         }
