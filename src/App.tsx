@@ -166,6 +166,7 @@ export default function App() {
             <Hero 
               profile={profile} 
               onQuickSearch={handleQuickSearch} 
+              onUpdatePhoto={(newPhotoUrl) => updateProfile({ ...profile, photoUrl: newPhotoUrl })}
             />
             
             <PublicListings 

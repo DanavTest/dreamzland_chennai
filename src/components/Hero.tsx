@@ -1,13 +1,49 @@
-import React from "react";
+import React, { useState } from "react";
 import { RealtorProfile } from "../types";
-import { Award, ShieldCheck, Users, ArrowDown, MapPin, MessageSquareText } from "lucide-react";
+import { Award, ShieldCheck, Users, ArrowDown, MapPin, MessageSquareText, Camera, Upload } from "lucide-react";
 
 interface HeroProps {
   profile: RealtorProfile;
   onQuickSearch: (type: "buy" | "rent", location: string, propertyType?: string) => void;
+  onUpdatePhoto?: (newPhotoUrl: string) => void;
 }
 
-export default function Hero({ profile, onQuickSearch }: HeroProps) {
+export default function Hero({ profile, onQuickSearch, onUpdatePhoto }: HeroProps) {
+  const [isUploading, setIsUploading] = useState(false);
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith("image/")) {
+      alert("Please select a valid image file.");
+      return;
+    }
+    setIsUploading(true);
+    try {
+      const reader = new FileReader();
+      reader.onload = async (event) => {
+        const dataUrl = event.target?.result as string;
+        // Send to server backend
+        try {
+          await fetch("/api/profile-photo", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ photoUrl: dataUrl }),
+          });
+        } catch (err) {
+          console.error("Failed to upload to server", err);
+        }
+        if (onUpdatePhoto) {
+          onUpdatePhoto(dataUrl);
+        }
+        setIsUploading(false);
+      };
+      reader.readAsDataURL(file);
+    } catch (err) {
+      console.error("Error processing photo file", err);
+      setIsUploading(false);
+    }
+  };
   const scrollToSection = (id: string) => {
     const element = document.getElementById(id);
     if (element) {
@@ -126,8 +162,26 @@ export default function Hero({ profile, onQuickSearch }: HeroProps) {
                   onError={(e) => {
                     (e.target as HTMLImageElement).src = "https://images.unsplash.com/photo-1618077360395-f3068be8e001?auto=format&fit=crop&w=800&q=80";
                   }}
-                  className="w-full h-full object-cover grayscale-[10%] group-hover:scale-105 group-hover:grayscale-0 transition-all duration-500"
+                  className="w-full h-full object-cover group-hover:scale-105 transition-all duration-500"
                 />
+
+                {/* Upload Photo Quick Action Overlay */}
+                <input
+                  type="file"
+                  id="hero-photo-input"
+                  accept="image/*"
+                  onChange={handleFileChange}
+                  className="hidden"
+                />
+                <button
+                  type="button"
+                  onClick={() => document.getElementById("hero-photo-input")?.click()}
+                  className="absolute top-3 right-3 bg-slate-900/80 hover:bg-slate-950 text-white backdrop-blur-md px-3 py-1.5 rounded-xl border border-white/20 text-xs font-mono font-medium flex items-center space-x-1.5 opacity-90 hover:opacity-100 transition-all shadow-md z-20 group/btn cursor-pointer"
+                  title="Upload or change Realtor profile photograph"
+                >
+                  <Camera className="h-3.5 w-3.5 text-indigo-400 group-hover/btn:scale-110 transition-transform" />
+                  <span>{isUploading ? "Uploading..." : "Upload Photo"}</span>
+                </button>
                 
                 {/* Info Overlay at the bottom */}
                 <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-slate-900 via-slate-900/95 to-transparent p-6 text-left">
